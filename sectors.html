@@ -4,8 +4,8 @@
 <title>Indian Sector Valuations</title>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---bg:#fff;--card:#fff;--ink:#0f2a56;--mute:#5b6b85;--line:#dbe3f0;--blue:#1a73f0;--green:#168a45;--red:#c0392b}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#121b2e;--ink:#e8eefb;--mute:#9aa8c4;--line:#27344f}}
+--bg:#fff;--card:#fff;--hl:#eef4fd;--ink:#0f2a56;--mute:#5b6b85;--line:#dbe3f0;--blue:#1a73f0;--green:#168a45;--red:#c0392b;--grey:#5f6f88}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#121b2e;--hl:#15233d;--ink:#e8eefb;--mute:#9aa8c4;--line:#27344f;--grey:#6b7a96}}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:1000px;margin:0 auto;padding:20px 16px 32px}
@@ -18,46 +18,68 @@ h1{font-size:clamp(26px,6vw,40px);margin:6px 0 4px}
 .sub,.asof{color:var(--mute);font-size:14px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:18px 0}
 .card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px}
+.card.best{background:var(--hl);border-color:var(--blue)}
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .name{font-weight:800;font-size:19px}.cap{color:var(--mute);font-size:13px}
 .pill{color:#fff;font-weight:700;font-size:11px;letter-spacing:.04em;padding:6px 10px;border-radius:99px;white-space:nowrap}
-.up{background:var(--green)}.down{background:var(--red)}
-.level{font-size:32px;font-weight:800;margin:12px 0 0}
-.level small{font-size:13px;color:var(--mute);font-weight:600}
-.move{font-weight:600;font-size:14px;margin:2px 0 14px}
+.pe{font-size:44px;font-weight:800;margin:10px 0 0}.pe small{font-size:14px;color:var(--mute);font-weight:600}
+.dev{font-weight:600;font-size:14px;margin:2px 0 12px}
+.bar{position:relative;height:8px;border-radius:99px;background:linear-gradient(90deg,#2e9e57,#cfe3d6 42%,#e9d5b8 55%,#e7a45a 75%,#c0392b)}
+.tick{position:absolute;left:50%;top:-3px;width:2px;height:14px;background:var(--grey)}
+.dot{position:absolute;top:-5px;width:6px;height:18px;border-radius:3px;background:var(--ink);transform:translateX(-50%)}
+.lab{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin:6px 0 12px}
+.sample{color:var(--mute);font-size:11px;margin:0 0 10px}
+.market{border-top:1px solid var(--line);padding-top:10px;margin-top:12px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px}
+.level{font-size:18px;font-weight:800}
+.level small{font-size:12px;color:var(--mute);font-weight:400}
+.move{font-weight:600;font-size:12px}
 .move.up{color:var(--green)}.move.down{color:var(--red)}
-.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.stats{display:flex;gap:24px;border-top:1px solid var(--line);padding-top:10px}
 .stats b{font-size:19px;display:block}.stats span{color:var(--mute);font-size:12px}
 .note{color:var(--mute);font-size:12px;margin-top:12px;line-height:1.5}
+.note a{color:var(--blue)}
 </style></head><body><main>
-<div class="top"><div class="eyebrow">Indian sector valuations · NSE indices</div><div class="toplinks"><a class="page-link" href="index.html">← Broad market valuations</a><div class="asof" id="asof"></div></div></div>
+<div class="top"><div class="eyebrow">Indian sector valuations · P/E vs 5-year median</div><div class="toplinks"><a class="page-link" href="index.html">← Broad market valuations</a><div class="asof" id="asof"></div></div></div>
 <h1>How are India's sectors valued?</h1><div class="sub" id="headline"></div>
 <div class="grid" id="grid"></div>
 <div class="note" id="src"></div>
-<div class="note">Sector index P/E, P/B, dividend yield and daily move are current NSE figures. Historical sector P/E data is not available here, so no five-year median comparison is shown. For information only, not investment advice. Mutual fund investments are subject to market risks.</div>
+<div class="note"><a href="https://www.niftyindices.com/reports/historical-data" target="_blank" rel="noopener">Official Nifty Indices historical reports</a> · <a href="nse_valuation_history.json" download>Download five-year valuation history</a></div>
+<div class="note">Valuation badges compare each sector with its own historical P/E, not other sectors. Daily index moves are shown separately against the previous close. For information only, not investment advice. Mutual fund investments are subject to market risks.</div>
 </main>
 <script>
 /*DATA_START*/
-const DATA={"asOf": "2026-11-24", "source": "NSE India live index data", "sectors": [{"name": "Nifty Auto", "cap": "Automobiles", "pe": 31.1, "pb": 4.45, "dy": 1.02, "level": 28490.7, "change": -296.95, "changePct": -1.03}, {"name": "Nifty Bank", "cap": "Banks", "pe": 13.83, "pb": 1.88, "dy": 1.0, "level": 62585.35, "change": -2049.85, "changePct": -3.17}, {"name": "Nifty Financial Services", "cap": "Financial services", "pe": 16.57, "pb": 2.6, "dy": 0.91, "level": 28153.5, "change": -717.7, "changePct": -2.49}, {"name": "Nifty FMCG", "cap": "Fast-moving consumer goods", "pe": 33.93, "pb": 8.02, "dy": 2.39, "level": 48312.55, "change": -223.15, "changePct": -0.46}, {"name": "Nifty IT", "cap": "Information technology", "pe": 19.36, "pb": 5.54, "dy": 3.62, "level": 31850.8, "change": 528.15, "changePct": 1.69}, {"name": "Nifty Pharma", "cap": "Pharmaceuticals", "pe": 45.51, "pb": 5.33, "dy": 0.54, "level": 28288.85, "change": -98.05, "changePct": -0.35}, {"name": "Nifty Metal", "cap": "Metals", "pe": 13.98, "pb": 2.51, "dy": 1.54, "level": 11819.25, "change": -451.85, "changePct": -3.68}, {"name": "Nifty Realty", "cap": "Real estate", "pe": 39.57, "pb": 4.11, "dy": 0.44, "level": 941.85, "change": 2.95, "changePct": 0.31}, {"name": "Nifty Media", "cap": "Media", "pe": 40.56, "pb": 1.9, "dy": 0.8, "level": 1749.2, "change": -6.55, "changePct": -0.37}, {"name": "Nifty PSU Bank", "cap": "Public sector banks", "pe": 8.19, "pb": 1.32, "dy": 2.18, "level": 9559.65, "change": -321.4, "changePct": -3.25}]};
+const DATA={"asOf": "2026-11-23", "source": "NSE India and Nifty Indices historical valuations", "thresholdPct": 10, "historyStart": "2021-11-23", "historyEnd": "2026-11-23", "historySource": "https://www.niftyindices.com/reports/historical-data", "sectors": [{"name": "Nifty Auto", "cap": "Automobiles", "median": 29.4, "medianSamples": 1242, "excludedSamples": 0, "pe": 31.1, "pb": 4.45, "dy": 1.02, "label": "FAIRLY VALUED", "level": 28490.7, "change": -296.95, "changePct": -1.03}, {"name": "Nifty Bank", "cap": "Banks", "median": 15.735, "medianSamples": 1242, "excludedSamples": 0, "pe": 13.83, "pb": 1.88, "dy": 1.0, "label": "UNDERVALUED", "level": 62585.35, "change": -2049.85, "changePct": -3.17}, {"name": "Nifty Financial Services", "cap": "Financial services", "median": 17.54, "medianSamples": 1242, "excludedSamples": 0, "pe": 16.57, "pb": 2.6, "dy": 0.91, "label": "FAIRLY VALUED", "level": 28153.5, "change": -717.7, "changePct": -2.49}, {"name": "Nifty FMCG", "cap": "Fast-moving consumer goods", "median": 41.805, "medianSamples": 1242, "excludedSamples": 0, "pe": 33.93, "pb": 8.02, "dy": 2.39, "label": "UNDERVALUED", "level": 48312.55, "change": -223.15, "changePct": -0.46}, {"name": "Nifty IT", "cap": "Information technology", "median": 26.93, "medianSamples": 1242, "excludedSamples": 0, "pe": 19.36, "pb": 5.54, "dy": 3.62, "label": "UNDERVALUED", "level": 31850.8, "change": 528.15, "changePct": 1.69}, {"name": "Nifty Pharma", "cap": "Pharmaceuticals", "median": 33.62, "medianSamples": 1242, "excludedSamples": 0, "pe": 45.51, "pb": 5.33, "dy": 0.54, "label": "OVERVALUED", "level": 28288.85, "change": -98.05, "changePct": -0.35}, {"name": "Nifty Metal", "cap": "Metals", "median": 19.06, "medianSamples": 1242, "excludedSamples": 0, "pe": 13.98, "pb": 2.51, "dy": 1.54, "label": "UNDERVALUED", "level": 11819.25, "change": -451.85, "changePct": -3.68}, {"name": "Nifty Realty", "cap": "Real estate", "median": 45.765, "medianSamples": 1242, "excludedSamples": 0, "pe": 39.57, "pb": 4.11, "dy": 0.44, "label": "UNDERVALUED", "level": 941.85, "change": 2.95, "changePct": 0.31}, {"name": "Nifty Media", "cap": "Media", "median": 60.26, "medianSamples": 537, "excludedSamples": 705, "pe": 40.56, "pb": 1.9, "dy": 0.8, "label": "UNDERVALUED", "level": 1749.2, "change": -6.55, "changePct": -0.37}, {"name": "Nifty PSU Bank", "cap": "Public sector banks", "median": 8.175, "medianSamples": 1242, "excludedSamples": 0, "pe": 8.19, "pb": 1.32, "dy": 2.18, "label": "FAIRLY VALUED", "level": 9559.65, "change": -321.4, "changePct": -3.25}]};
 /*DATA_END*/
-const $=id=>document.getElementById(id);
+const T=DATA.thresholdPct,$=id=>document.getElementById(id);
 const format=n=>new Intl.NumberFormat("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
 const signed=n=>(n>0?"+":"")+n.toFixed(2);
-const sectors=DATA.sectors;
-$("asof").textContent="Data as of "+new Date(DATA.asOf+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
-$("src").textContent="Source: "+DATA.source+". Daily change is measured against the previous close.";
+const sg=d=>(d>0?"+":"")+Math.round(d)+"%";
+const dateText=d=>new Date(d+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
+const colours={"UNDERVALUED":"var(--green)","OVERVALUED":"var(--red)","FAIRLY VALUED":"var(--grey)"};
+const sectors=DATA.sectors.map(i=>{
+ const d=(i.pe-i.median)*100/i.median;
+ const col=colours[i.label];
+ if(!col)throw new Error("Missing valuation label for "+i.name);
+ return{...i,d,col};
+});
+$("asof").textContent="Data as of "+dateText(DATA.asOf);
+$("src").textContent="Source: "+DATA.source+". Median window: "+dateText(DATA.historyStart)+" to "+dateText(DATA.historyEnd)+". Medians use daily positive P/Es; unavailable/nonpositive observations are excluded. A discount of at least "+T+"% is undervalued, a premium of at least "+T+"% is overvalued; otherwise fairly valued.";
 if(sectors.length){
- const best=sectors.reduce((a,b)=>b.changePct>a.changePct?b:a);
- const worst=sectors.reduce((a,b)=>b.changePct<a.changePct?b:a);
- $("headline").textContent=best.name+" leads today; "+worst.name+" is the weakest.";
+ const best=sectors.reduce((a,b)=>b.d<a.d?b:a);
+ $("headline").textContent=best.name+" has the lowest P/E relative to its own five-year median.";
  $("grid").innerHTML=sectors.map(r=>{
   const direction=r.changePct>=0?"up":"down";
-  return `<div class="card"><div class="row"><div><div class="name">${r.name.toUpperCase()}</div><div class="cap">${r.cap}</div></div><span class="pill ${direction}">${signed(r.changePct)}%</span></div>
-  <div class="level">${format(r.level)} <small>index</small></div>
-  <div class="move ${direction}">${signed(r.change)} points today (${signed(r.changePct)}%)</div>
-  <div class="stats"><div><b>${r.pe.toFixed(2)}x</b><span>P/E</span></div><div><b>${r.pb.toFixed(2)}x</b><span>P/B</span></div><div><b>${r.dy.toFixed(2)}%</b><span>Dividend yield</span></div></div></div>`;
+  const p=Math.min(97,Math.max(3,50+r.d*1.76));
+  return `<div class="card ${r===best&&r.label==="UNDERVALUED"?"best":""}"><div class="row"><div><div class="name">${r.name.toUpperCase()}</div><div class="cap">${r.cap}</div></div><span class="pill" style="background:${r.col}">${r.label}</span></div>
+  <div class="pe">${r.pe.toFixed(1)}x <small>P/E</small></div>
+  <div class="dev" style="color:${r.label==="FAIRLY VALUED"?"var(--ink)":r.col}">${sg(r.d)} vs 5-yr median of ${format(r.median)}x</div>
+  <div class="bar"><div class="tick"></div><div class="dot" style="left:${p}%"></div></div>
+  <div class="lab"><span>Cheaper</span><span>Median</span><span>Costlier</span></div>
+  <div class="sample">${r.excludedSamples?"Limited P/E availability: ":""}${r.medianSamples.toLocaleString("en-IN")} valid daily P/Es${r.excludedSamples?`; ${r.excludedSamples.toLocaleString("en-IN")} unavailable/nonpositive excluded`:""}</div>
+  <div class="stats"><div><b>${r.pb.toFixed(2)}x</b><span>P/B</span></div><div><b>${r.dy.toFixed(2)}%</b><span>Dividend yield</span></div></div>
+  <div class="market"><div class="level">${format(r.level)} <small>index level</small></div><div class="move ${direction}">${signed(r.change)} points (${signed(r.changePct)}% today)</div></div></div>`;
  }).join("");
 }else{
- $("headline").textContent="Sector data will appear after the daily NSE update runs.";
+ $("headline").textContent="No sector data is available. Please check the daily update logs.";
 }
 </script></body></html>
