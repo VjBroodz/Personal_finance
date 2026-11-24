@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Indian Sector Valuations</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#fff;--card:#fff;--ink:#0f2a56;--mute:#5b6b85;--line:#dbe3f0;--blue:#1a73f0;--green:#168a45;--red:#c0392b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#121b2e;--ink:#e8eefb;--mute:#9aa8c4;--line:#27344f}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 32px}
+.top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
+.eyebrow{color:var(--blue);font-weight:700;letter-spacing:.08em;font-size:12px;text-transform:uppercase}
+.toplinks{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.page-link{color:var(--blue);font-size:13px;font-weight:700;text-decoration:none}
+.page-link:hover{text-decoration:underline}
+h1{font-size:clamp(26px,6vw,40px);margin:6px 0 4px}
+.sub,.asof{color:var(--mute);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:18px 0}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.name{font-weight:800;font-size:19px}.cap{color:var(--mute);font-size:13px}
+.pill{color:#fff;font-weight:700;font-size:11px;letter-spacing:.04em;padding:6px 10px;border-radius:99px;white-space:nowrap}
+.up{background:var(--green)}.down{background:var(--red)}
+.level{font-size:32px;font-weight:800;margin:12px 0 0}
+.level small{font-size:13px;color:var(--mute);font-weight:600}
+.move{font-weight:600;font-size:14px;margin:2px 0 14px}
+.move.up{color:var(--green)}.move.down{color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.stats b{font-size:19px;display:block}.stats span{color:var(--mute);font-size:12px}
+.note{color:var(--mute);font-size:12px;margin-top:12px;line-height:1.5}
+</style></head><body><main>
+<div class="top"><div class="eyebrow">Indian sector valuations · NSE indices</div><div class="toplinks"><a class="page-link" href="index.html">← Broad market valuations</a><div class="asof" id="asof"></div></div></div>
+<h1>How are India's sectors valued?</h1><div class="sub" id="headline"></div>
+<div class="grid" id="grid"></div>
+<div class="note" id="src"></div>
+<div class="note">Sector index P/E, P/B, dividend yield and daily move are current NSE figures. Historical sector P/E data is not available here, so no five-year median comparison is shown. For information only, not investment advice. Mutual fund investments are subject to market risks.</div>
+</main>
+<script>
+/*DATA_START*/
+const DATA={"asOf": "2026-11-24", "source": "NSE India live index data", "sectors": [{"name": "Nifty Auto", "cap": "Automobiles", "pe": 31.1, "pb": 4.45, "dy": 1.02, "level": 28490.7, "change": -296.95, "changePct": -1.03}, {"name": "Nifty Bank", "cap": "Banks", "pe": 13.83, "pb": 1.88, "dy": 1.0, "level": 62585.35, "change": -2049.85, "changePct": -3.17}, {"name": "Nifty Financial Services", "cap": "Financial services", "pe": 16.57, "pb": 2.6, "dy": 0.91, "level": 28153.5, "change": -717.7, "changePct": -2.49}, {"name": "Nifty FMCG", "cap": "Fast-moving consumer goods", "pe": 33.93, "pb": 8.02, "dy": 2.39, "level": 48312.55, "change": -223.15, "changePct": -0.46}, {"name": "Nifty IT", "cap": "Information technology", "pe": 19.36, "pb": 5.54, "dy": 3.62, "level": 31850.8, "change": 528.15, "changePct": 1.69}, {"name": "Nifty Pharma", "cap": "Pharmaceuticals", "pe": 45.51, "pb": 5.33, "dy": 0.54, "level": 28288.85, "change": -98.05, "changePct": -0.35}, {"name": "Nifty Metal", "cap": "Metals", "pe": 13.98, "pb": 2.51, "dy": 1.54, "level": 11819.25, "change": -451.85, "changePct": -3.68}, {"name": "Nifty Realty", "cap": "Real estate", "pe": 39.57, "pb": 4.11, "dy": 0.44, "level": 941.85, "change": 2.95, "changePct": 0.31}, {"name": "Nifty Media", "cap": "Media", "pe": 40.56, "pb": 1.9, "dy": 0.8, "level": 1749.2, "change": -6.55, "changePct": -0.37}, {"name": "Nifty PSU Bank", "cap": "Public sector banks", "pe": 8.19, "pb": 1.32, "dy": 2.18, "level": 9559.65, "change": -321.4, "changePct": -3.25}]};
+/*DATA_END*/
+const $=id=>document.getElementById(id);
+const format=n=>new Intl.NumberFormat("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const signed=n=>(n>0?"+":"")+n.toFixed(2);
+const sectors=DATA.sectors;
+$("asof").textContent="Data as of "+new Date(DATA.asOf+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
+$("src").textContent="Source: "+DATA.source+". Daily change is measured against the previous close.";
+if(sectors.length){
+ const best=sectors.reduce((a,b)=>b.changePct>a.changePct?b:a);
+ const worst=sectors.reduce((a,b)=>b.changePct<a.changePct?b:a);
+ $("headline").textContent=best.name+" leads today; "+worst.name+" is the weakest.";
+ $("grid").innerHTML=sectors.map(r=>{
+  const direction=r.changePct>=0?"up":"down";
+  return `<div class="card"><div class="row"><div><div class="name">${r.name.toUpperCase()}</div><div class="cap">${r.cap}</div></div><span class="pill ${direction}">${signed(r.changePct)}%</span></div>
+  <div class="level">${format(r.level)} <small>index</small></div>
+  <div class="move ${direction}">${signed(r.change)} points today (${signed(r.changePct)}%)</div>
+  <div class="stats"><div><b>${r.pe.toFixed(2)}x</b><span>P/E</span></div><div><b>${r.pb.toFixed(2)}x</b><span>P/B</span></div><div><b>${r.dy.toFixed(2)}%</b><span>Dividend yield</span></div></div></div>`;
+ }).join("");
+}else{
+ $("headline").textContent="Sector data will appear after the daily NSE update runs.";
+}
+</script></body></html>
