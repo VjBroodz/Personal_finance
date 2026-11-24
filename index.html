@@ -27,11 +27,13 @@ h1{font-size:clamp(26px,6vw,40px);margin:6px 0 4px}
 .lab{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin:6px 0 12px}
 .stats{display:flex;gap:24px;border-top:1px solid var(--line);padding-top:10px}
 .stats b{font-size:20px;display:block}.stats span{color:var(--mute);font-size:12px}
+.sample{color:var(--mute);font-size:11px;margin:0 0 10px}
 .means{background:#0f2a56;color:#fff;border-radius:16px;padding:18px}
 .means h2{margin:0 0 10px;font-size:13px;letter-spacing:.1em;color:#9dbcf5}
 .means li{margin:8px 0;list-style:none;padding-left:18px;position:relative}
 .means li:before{content:"";position:absolute;left:0;top:7px;width:9px;height:9px;border-radius:50%;background:var(--c)}
 .note{color:var(--mute);font-size:12px;margin-top:12px;line-height:1.5}
+.note a{color:var(--blue)}
 .toplinks{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .page-link{color:var(--blue);font-size:13px;font-weight:700;text-decoration:none}
 .page-link:hover{text-decoration:underline}
@@ -41,28 +43,34 @@ h1{font-size:clamp(26px,6vw,40px);margin:6px 0 4px}
 <div class="grid" id="grid"></div>
 <div class="means"><h2>WHAT IT MEANS FOR INVESTORS</h2><ul id="means" style="margin:0;padding:0"></ul></div>
 <div class="note" id="src"></div>
+<div class="note"><a href="https://www.niftyindices.com/reports/historical-data" target="_blank" rel="noopener">Official Nifty Indices historical reports</a> · <a href="nse_valuation_history.json" download>Download five-year valuation history</a></div>
 <div class="note">For information only, not investment advice. Mutual fund investments are subject to market risks.</div>
 </main>
 <script>
 /*DATA_START*/
-const DATA={"asOf": "2026-11-24", "source": "NSE index data", "thresholdPct": 10, "indices": [{"name": "Nifty 50", "cap": "Large-cap benchmark", "pe": 20.65, "median": 21.9, "pb": 3.11, "dy": 1.35}, {"name": "Nifty Next 50", "cap": "Upper large caps", "pe": 17.52, "median": 22.4, "pb": 3.47, "dy": 1.38}, {"name": "Nifty Midcap 150", "cap": "Mid-cap benchmark", "pe": 27.95, "median": 29.4, "pb": 3.95, "dy": 0.93}, {"name": "Nifty Smallcap 250", "cap": "Small-cap benchmark", "pe": 31.92, "median": 28.3, "pb": 3.4, "dy": 0.76}]};
+const DATA={"asOf": "2026-11-23", "source": "NSE India and Nifty Indices historical valuations", "thresholdPct": 10, "historyStart": "2021-11-23", "historyEnd": "2026-11-23", "historySource": "https://www.niftyindices.com/reports/historical-data", "indices": [{"name": "Nifty 50", "cap": "Large-cap benchmark", "median": 21.89, "medianSamples": 1242, "excludedSamples": 0, "pe": 20.65, "pb": 3.11, "dy": 1.35, "label": "FAIRLY VALUED"}, {"name": "Nifty Next 50", "cap": "Upper large caps", "median": 22.39, "medianSamples": 1242, "excludedSamples": 0, "pe": 17.52, "pb": 3.47, "dy": 1.38, "label": "UNDERVALUED"}, {"name": "Nifty Midcap 150", "cap": "Mid-cap benchmark", "median": 29.285, "medianSamples": 1242, "excludedSamples": 0, "pe": 27.95, "pb": 3.95, "dy": 0.93, "label": "FAIRLY VALUED"}, {"name": "Nifty Smallcap 250", "cap": "Small-cap benchmark", "median": 28.35, "medianSamples": 1242, "excludedSamples": 0, "pe": 31.92, "pb": 3.4, "dy": 0.76, "label": "OVERVALUED"}]};
 /*DATA_END*/
 const T=DATA.thresholdPct,$=id=>document.getElementById(id);
-const rows=DATA.indices.map(i=>{const d=(i.pe/i.median-1)*100;
- const s=d<=-T?["UNDERVALUED","var(--green)"]:d>=T?["OVERVALUED","var(--red)"]:["FAIRLY VALUED","var(--grey)"];
- return{...i,d,label:s[0],col:s[1]}});
+const format=n=>new Intl.NumberFormat("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const colours={"UNDERVALUED":"var(--green)","OVERVALUED":"var(--red)","FAIRLY VALUED":"var(--grey)"};
+const rows=DATA.indices.map(i=>{const d=(i.pe-i.median)*100/i.median;
+ const col=colours[i.label];
+ if(!col)throw new Error("Missing valuation label for "+i.name);
+ return{...i,d,col}});
 const sg=d=>(d>0?"+":"")+Math.round(d)+"%";
 const best=rows.reduce((a,b)=>b.d<a.d?b:a),worst=rows.reduce((a,b)=>b.d>a.d?b:a);
 $("asof").textContent="Data as of "+new Date(DATA.asOf+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
-$("src").textContent="Source: "+DATA.source+". Verdict: within ±"+T+"% of 5-year median P/E = fairly valued.";
+const dateText=d=>new Date(d+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
+$("src").textContent="Source: "+DATA.source+". Median window: "+dateText(DATA.historyStart)+" to "+dateText(DATA.historyEnd)+". Medians use daily positive P/Es; unavailable/nonpositive observations are excluded. A discount of at least "+T+"% is undervalued, a premium of at least "+T+"% is overvalued; otherwise fairly valued.";
 const nOver=rows.filter(r=>r.label==="OVERVALUED").length,nUnder=rows.filter(r=>r.label==="UNDERVALUED").length;
 $("headline").textContent=nOver?worst.name+" looks stretched; "+best.name+" looks cheapest.":nUnder?best.name+" looks cheapest; the rest look reasonable.":"All four indices trade near their medians.";
 $("grid").innerHTML=rows.map(r=>{const p=Math.min(97,Math.max(3,50+r.d*1.76));
  return `<div class="card ${r===best&&r.label==="UNDERVALUED"?"best":""}"><div class="row"><div><div class="name">${r.name.toUpperCase()}</div><div class="cap">${r.cap}</div></div><span class="pill" style="background:${r.col}">${r.label}</span></div>
  <div class="pe">${r.pe.toFixed(1)}x <small>P/E</small></div>
- <div class="dev" style="color:${r.label==="FAIRLY VALUED"?"var(--ink)":r.col}">${sg(r.d)} vs 5-yr median of ${r.median.toFixed(1)}x</div>
+ <div class="dev" style="color:${r.label==="FAIRLY VALUED"?"var(--ink)":r.col}">${sg(r.d)} vs 5-yr median of ${format(r.median)}x</div>
  <div class="bar"><div class="tick"></div><div class="dot" style="left:${p}%"></div></div>
  <div class="lab"><span>Cheaper</span><span>Median</span><span>Costlier</span></div>
+ <div class="sample">${r.medianSamples.toLocaleString("en-IN")} valid daily P/Es${r.excludedSamples?`; ${r.excludedSamples.toLocaleString("en-IN")} unavailable/nonpositive excluded`:""}</div>
  <div class="stats"><div><b>${r.pb.toFixed(2)}x</b><span>P/B</span></div><div><b>${r.dy.toFixed(2)}%</b><span>Dividend yield</span></div></div></div>`}).join("");
 const m=[];
 m.push([`<b>Best relative value: ${best.name}</b>, ${Math.abs(Math.round(best.d))}% ${best.d<0?"below":"above"} its 5-year median P/E.`,"#6fcf97"]);
