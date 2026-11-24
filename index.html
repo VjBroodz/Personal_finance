@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Market Valuation Check</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#fff;--card:#fff;--hl:#eef4fd;--ink:#0f2a56;--mute:#5b6b85;--line:#dbe3f0;--blue:#1a73f0;--green:#168a45;--red:#c0392b;--grey:#5f6f88}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#121b2e;--hl:#15233d;--ink:#e8eefb;--mute:#9aa8c4;--line:#27344f;--grey:#6b7a96}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:900px;margin:0 auto;padding:20px 16px 32px}
+.top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px}
+.eyebrow{color:var(--blue);font-weight:700;letter-spacing:.08em;font-size:12px;text-transform:uppercase}
+h1{font-size:clamp(26px,6vw,40px);margin:6px 0 4px}
+.sub,.asof{color:var(--mute);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:18px 0}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px}
+.card.best{background:var(--hl);border-color:var(--blue)}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.name{font-weight:800;font-size:19px}.cap{color:var(--mute);font-size:13px}
+.pill{color:#fff;font-weight:700;font-size:11px;letter-spacing:.04em;padding:6px 10px;border-radius:99px;white-space:nowrap}
+.pe{font-size:44px;font-weight:800;margin:10px 0 0}.pe small{font-size:14px;color:var(--mute);font-weight:600}
+.dev{font-weight:600;font-size:14px;margin:2px 0 12px}
+.bar{position:relative;height:8px;border-radius:99px;background:linear-gradient(90deg,#2e9e57,#cfe3d6 42%,#e9d5b8 55%,#e7a45a 75%,#c0392b)}
+.tick{position:absolute;left:50%;top:-3px;width:2px;height:14px;background:var(--grey)}
+.dot{position:absolute;top:-5px;width:6px;height:18px;border-radius:3px;background:var(--ink);transform:translateX(-50%)}
+.lab{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin:6px 0 12px}
+.stats{display:flex;gap:24px;border-top:1px solid var(--line);padding-top:10px}
+.stats b{font-size:20px;display:block}.stats span{color:var(--mute);font-size:12px}
+.means{background:#0f2a56;color:#fff;border-radius:16px;padding:18px}
+.means h2{margin:0 0 10px;font-size:13px;letter-spacing:.1em;color:#9dbcf5}
+.means li{margin:8px 0;list-style:none;padding-left:18px;position:relative}
+.means li:before{content:"";position:absolute;left:0;top:7px;width:9px;height:9px;border-radius:50%;background:var(--c)}
+.note{color:var(--mute);font-size:12px;margin-top:12px;line-height:1.5}
+</style></head><body><main>
+<div class="top"><div class="eyebrow">Indian index valuations · P/E vs 5-year median</div><div class="asof" id="asof"></div></div>
+<h1>Where is the value today?</h1><div class="sub" id="headline"></div>
+<div class="grid" id="grid"></div>
+<div class="means"><h2>WHAT IT MEANS FOR INVESTORS</h2><ul id="means" style="margin:0;padding:0"></ul></div>
+<div class="note" id="src"></div>
+<div class="note">For information only, not investment advice. Mutual fund investments are subject to market risks.</div>
+</main>
+<script>
+/*DATA_START*/
+const DATA={"asOf":"2026-11-23","source":"NSE index data","thresholdPct":10,"indices":[
+{"name":"Nifty 50","cap":"Large-cap benchmark","pe":20.5,"median":21.9,"pb":3.08,"dy":1.39},
+{"name":"Nifty Next 50","cap":"Upper large caps","pe":17.6,"median":22.4,"pb":3.50,"dy":1.35},
+{"name":"Nifty Midcap 150","cap":"Mid-cap benchmark","pe":28.0,"median":29.4,"pb":3.95,"dy":0.95},
+{"name":"Nifty Smallcap 250","cap":"Small-cap benchmark","pe":32.4,"median":28.3,"pb":3.39,"dy":0.76}]};
+/*DATA_END*/
+const T=DATA.thresholdPct,$=id=>document.getElementById(id);
+const rows=DATA.indices.map(i=>{const d=(i.pe/i.median-1)*100;
+ const s=d<=-T?["UNDERVALUED","var(--green)"]:d>=T?["OVERVALUED","var(--red)"]:["FAIRLY VALUED","var(--grey)"];
+ return{...i,d,label:s[0],col:s[1]}});
+const sg=d=>(d>0?"+":"")+Math.round(d)+"%";
+const best=rows.reduce((a,b)=>b.d<a.d?b:a),worst=rows.reduce((a,b)=>b.d>a.d?b:a);
+$("asof").textContent="Data as of "+new Date(DATA.asOf+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
+$("src").textContent="Source: "+DATA.source+". Verdict: within ±"+T+"% of 5-year median P/E = fairly valued.";
+const nOver=rows.filter(r=>r.label==="OVERVALUED").length,nUnder=rows.filter(r=>r.label==="UNDERVALUED").length;
+$("headline").textContent=nOver?worst.name+" looks stretched; "+best.name+" looks cheapest.":nUnder?best.name+" looks cheapest; the rest look reasonable.":"All four indices trade near their medians.";
+$("grid").innerHTML=rows.map(r=>{const p=Math.min(97,Math.max(3,50+r.d*1.76));
+ return `<div class="card ${r===best&&r.label==="UNDERVALUED"?"best":""}"><div class="row"><div><div class="name">${r.name.toUpperCase()}</div><div class="cap">${r.cap}</div></div><span class="pill" style="background:${r.col}">${r.label}</span></div>
+ <div class="pe">${r.pe.toFixed(1)}x <small>P/E</small></div>
+ <div class="dev" style="color:${r.label==="FAIRLY VALUED"?"var(--ink)":r.col}">${sg(r.d)} vs 5-yr median of ${r.median.toFixed(1)}x</div>
+ <div class="bar"><div class="tick"></div><div class="dot" style="left:${p}%"></div></div>
+ <div class="lab"><span>Cheaper</span><span>Median</span><span>Costlier</span></div>
+ <div class="stats"><div><b>${r.pb.toFixed(2)}x</b><span>P/B</span></div><div><b>${r.dy.toFixed(2)}%</b><span>Dividend yield</span></div></div></div>`}).join("");
+const m=[];
+m.push([`<b>Best relative value: ${best.name}</b>, ${Math.abs(Math.round(best.d))}% ${best.d<0?"below":"above"} its 5-year median P/E.`,"#6fcf97"]);
+const fair=rows.filter(r=>r.label==="FAIRLY VALUED");
+if(fair.length)m.push([`<b>${fair.map(r=>r.name.replace("Nifty ","")).join(" and ")} ${fair.length>1?"are":"is"} fairly valued.</b> Keep SIPs steady.`,"#e8eefb"]);
+const ov=rows.filter(r=>r.label==="OVERVALUED");
+ov.forEach(r=>m.push([`<b>${r.name.replace("Nifty ","")} trades ${Math.round(r.d)}% above its median.</b> Stagger fresh lump sums.`,"#f2b866"]));
+$("means").innerHTML=m.map(x=>`<li style="--c:${x[1]}">${x[0]}</li>`).join("");
+</script></body></html>
