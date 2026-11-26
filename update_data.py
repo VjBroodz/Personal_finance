@@ -37,9 +37,9 @@ SECTORS = [
 ]
 ROOT = Path(__file__).resolve().parent
 HISTORY = ROOT / "nse_valuation_history.json"
-SNAPSHOT_URL = "https://www.nseindia.in/api/allIndices"
-BANK_CONSTITUENTS_URL = "https://www.nseindia.in/api/equity-stockIndices"
-EQUITY_QUOTE_URL = "https://www.nseindia.in/api/quote-equity"
+SNAPSHOT_URL = "https://www.nseindia.com/api/allIndices"
+BANK_CONSTITUENTS_URL = "https://www.nseindia.com/api/equity-stockIndices"
+EQUITY_QUOTE_URL = "https://www.nseindia.com/api/quote-equity"
 HISTORY_SOURCE = "https://www.niftyindices.com/reports/historical-data"
 HISTORY_URL = "https://www.niftyindices.com/BackPage/getpepbHistoricaldataDBtoString"
 MAPPING_URL = "https://liveindexsa.niftyindices.com/assets/json/IndexMapping.json"
@@ -210,8 +210,8 @@ def atomic_write(path, content):
 
 
 def fetch_bank_stocks(session):
-    session.get("https://www.nseindia.in", timeout=45).raise_for_status()
-    nse_headers = {"Referer": "https://www.nseindia.in/market-data/live-equity-market"}
+    session.get("https://www.nseindia.com", timeout=45)
+    nse_headers = {"Referer": "https://www.nseindia.com/market-data/live-equity-market"}
     response = session.get(BANK_CONSTITUENTS_URL, params={"index": "NIFTY BANK"},
                            headers=nse_headers, timeout=45)
     response.raise_for_status()
