@@ -38,6 +38,8 @@ SECTORS = [
 ROOT = Path(__file__).resolve().parent
 HISTORY = ROOT / "nse_valuation_history.json"
 SNAPSHOT_URL = "https://www.nseindia.com/api/allIndices"
+BANK_CONSTITUENTS_URL = "https://www.nseindia.com/api/equity-stockIndices"
+EQUITY_QUOTE_URL = "https://www.nseindia.com/api/quote-equity"
 HISTORY_SOURCE = "https://www.niftyindices.com/reports/historical-data"
 HISTORY_URL = "https://www.niftyindices.com/BackPage/getpepbHistoricaldataDBtoString"
 MAPPING_URL = "https://liveindexsa.niftyindices.com/assets/json/IndexMapping.json"
@@ -207,6 +209,53 @@ def atomic_write(path, content):
             temporary.unlink()
 
 
+def fetch_bank_stocks(session):
+    session.get("https://www.nseindia.com", timeout=45).raise_for_status()
+    nse_headers = {"Referer": "https://www.nseindia.com/market-data/live-equity-market"}
+    response = session.get(BANK_CONSTITUENTS_URL, params={"index": "NIFTY BANK"},
+                           headers=nse_headers, timeout=45)
+    response.raise_for_status()
+    payload = response.json()
+    constituents = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(constituents, list):
+        raise ValueError("NIFTY BANK: expected a list of constituent stocks from NSE")
+
+    stocks = []
+    seen = set()
+    for raw in constituents:
+        symbol = raw.get("symbol")
+        if not symbol or symbol == "NIFTY BANK":
+            continue
+        if symbol in seen:
+            raise ValueError(f"NIFTY BANK: duplicate constituent {symbol}")
+        seen.add(symbol)
+
+        cmp = number(raw.get("lastPrice"), f"{symbol} current CMP")
+        if cmp is None or cmp <= 0:
+            raise ValueError(f"{symbol}: current CMP is unavailable")
+
+        quote_response = session.get(EQUITY_QUOTE_URL, params={"symbol": symbol},
+                                     headers=nse_headers, timeout=45)
+        quote_response.raise_for_status()
+        quote = quote_response.json()
+        metadata = quote.get("metadata", {}) if isinstance(quote, dict) else {}
+        quote_info = quote.get("info") or {}
+        quote_symbol = metadata.get("symbol") or quote_info.get("symbol")
+        if quote_symbol != symbol:
+            raise ValueError(f"{symbol}: NSE returned quote data for {quote_symbol!r}")
+        pe = number(metadata.get("pdSymbolPe"), f"{symbol} P/E")
+        if pe == 0:
+            pe = None
+
+        meta = raw.get("meta") or {}
+        company = meta.get("companyName") or raw.get("companyName") or symbol
+        stocks.append({"symbol": symbol, "name": company, "cmp": cmp, "pe": pe})
+
+    if not stocks:
+        raise ValueError("NIFTY BANK: NSE returned no constituent stocks")
+    return stocks
+
+
 def main():
     with create_session() as session:
         snapshot = get_json(session, SNAPSHOT_URL)
@@ -214,6 +263,7 @@ def main():
         start = five_year_start(as_of)
         names = list(NSE) + [sector["name"] for sector in SECTORS]
         history = refresh_history(session, names, start, as_of)
+        bank_stocks = fetch_bank_stocks(session)
     medians = calculate_medians(history, start, as_of)
     rows = {row["index"]: row for row in snapshot["data"]}
 
@@ -247,6 +297,7 @@ def main():
     pages = {
         ROOT / "index.html": {**common, "indices": indices},
         ROOT / "sectors.html": {**common, "sectors": sectors},
+        ROOT / "bank_stocks.html": {**common, "stocks": bank_stocks},
     }
     prepared = {path: prepare_data_block(path.read_text(encoding="utf-8"), payload)
                 for path, payload in pages.items()}
@@ -256,7 +307,7 @@ def main():
     atomic_write(HISTORY, cache_text)
     for path, content in prepared.items():
         atomic_write(path, content)
-    print(f"Updated both pages: {start} to {as_of}")
+    print(f"Updated pages: {start} to {as_of}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NIFTY BANK Stocks</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#fff;--card:#fff;--ink:#0f2a56;--mute:#5b6b85;--line:#dbe3f0;--blue:#1a73f0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--card:#121b2e;--ink:#e8eefb;--mute:#9aa8c4;--line:#27344f}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:900px;margin:0 auto;padding:20px 16px 32px}
+.top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
+.eyebrow{color:var(--blue);font-weight:700;letter-spacing:.08em;font-size:12px;text-transform:uppercase}
+.toplinks{display:flex;gap:14px;flex-wrap:wrap}
+.page-link{color:var(--blue);font-size:13px;font-weight:700;text-decoration:none}
+.page-link:hover{text-decoration:underline}
+h1{font-size:clamp(26px,6vw,40px);margin:8px 0 4px}
+.sub,.asof{color:var(--mute);font-size:14px}
+.table-wrap{overflow-x:auto;margin-top:20px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+table{width:100%;border-collapse:collapse;text-align:left}
+th,td{padding:13px 16px;border-bottom:1px solid var(--line)}
+th{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td{font-size:14px}
+tbody tr:last-child td{border-bottom:0}
+.symbol{font-weight:800}
+.number{text-align:right;font-variant-numeric:tabular-nums}
+.empty,.note{color:var(--mute);font-size:13px;line-height:1.5}
+.empty{padding:18px}
+.note{margin-top:14px}
+.note a{color:var(--blue)}
+@media(max-width:480px){th,td{padding:11px 12px}.company{min-width:145px}}
+</style></head><body><main>
+<div class="top"><div class="eyebrow">NIFTY BANK constituents</div><div class="toplinks"><a class="page-link" href="sectors.html">← Sector valuations</a><a class="page-link" href="index.html">Broad market →</a></div></div>
+<h1>NIFTY BANK stocks</h1><div class="sub" id="summary"></div>
+<div class="table-wrap"><table aria-label="NIFTY BANK constituent stock prices and P/E ratios"><thead><tr><th>Company</th><th>Symbol</th><th class="number">CMP (₹)</th><th class="number">P/E</th></tr></thead><tbody id="stocks"></tbody></table><div class="empty" id="empty" hidden></div></div>
+<div class="note" id="asof"></div>
+<div class="note">CMP and P/E are sourced from NSE India. P/E can vary with reported earnings and may be unavailable for some securities. For information only, not investment advice.</div>
+<div class="note"><a href="https://www.nseindia.com/market-data/live-equity-market" target="_blank" rel="noopener">NSE India market data</a></div>
+</main>
+<script>
+/*DATA_START*/
+const DATA={"asOf":null,"stocks":[]};
+/*DATA_END*/
+const format=n=>new Intl.NumberFormat("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const stocks=[...DATA.stocks].sort((a,b)=>a.pe===null?1:b.pe===null?-1:a.pe-b.pe);
+document.getElementById("summary").textContent=stocks.length?stocks.length+" constituent stocks · ordered by P/E":"Constituent data is not available yet.";
+document.getElementById("asof").textContent=DATA.asOf?"Data as of "+new Date(DATA.asOf+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"})+". Updated by the daily NSE data refresh.":"Run the daily data refresh to populate current prices and P/E ratios.";
+if(stocks.length){
+ const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+ document.getElementById("stocks").innerHTML=stocks.map(stock=>`<tr><td class="company">${escapeHtml(stock.name)}</td><td class="symbol">${escapeHtml(stock.symbol)}</td><td class="number">${format(stock.cmp)}</td><td class="number">${stock.pe===null?"N/A":format(stock.pe)+"x"}</td></tr>`).join("");
+}else{
+ document.getElementById("empty").hidden=false;
+ document.getElementById("empty").textContent="No NIFTY BANK constituent data is available. Please run the daily data refresh and try again.";
+}
+</script></body></html>

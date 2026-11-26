@@ -38,6 +38,8 @@ h1{font-size:clamp(26px,6vw,40px);margin:6px 0 4px}
 .stats b{font-size:19px;display:block}.stats span{color:var(--mute);font-size:12px}
 .note{color:var(--mute);font-size:12px;margin-top:12px;line-height:1.5}
 .note a{color:var(--blue)}
+.sector-link{display:inline-block;margin-top:14px;color:var(--blue);font-size:13px;font-weight:700;text-decoration:none}
+.sector-link:hover{text-decoration:underline}
 </style></head><body><main>
 <div class="top"><div class="eyebrow">Indian sector valuations · P/E vs 5-year median</div><div class="toplinks"><a class="page-link" href="index.html">← Broad market valuations</a><div class="asof" id="asof"></div></div></div>
 <h1>How are India's sectors valued?</h1><div class="sub" id="headline"></div>
@@ -77,7 +79,7 @@ if(sectors.length){
   <div class="lab"><span>Cheaper</span><span>Median</span><span>Costlier</span></div>
   <div class="sample">${r.excludedSamples?"Limited P/E availability: ":""}${r.medianSamples.toLocaleString("en-IN")} valid daily P/Es${r.excludedSamples?`; ${r.excludedSamples.toLocaleString("en-IN")} unavailable/nonpositive excluded`:""}</div>
   <div class="stats"><div><b>${r.pb.toFixed(2)}x</b><span>P/B</span></div><div><b>${r.dy.toFixed(2)}%</b><span>Dividend yield</span></div></div>
-  <div class="market"><div class="level">${format(r.level)} <small>index level</small></div><div class="move ${direction}">${signed(r.change)} points (${signed(r.changePct)}% today)</div></div></div>`;
+  <div class="market"><div class="level">${format(r.level)} <small>index level</small></div><div class="move ${direction}">${signed(r.change)} points (${signed(r.changePct)}% today)</div></div>${r.name==="Nifty Bank"?'<a class="sector-link" href="bank_stocks.html">View NIFTY BANK stocks →</a>':""}</div>`;
  }).join("");
 }else{
  $("headline").textContent="No sector data is available. Please check the daily update logs.";
