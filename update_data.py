@@ -38,8 +38,8 @@ SECTORS = [
 ROOT = Path(__file__).resolve().parent
 HISTORY = ROOT / "nse_valuation_history.json"
 SNAPSHOT_URL = "https://www.nseindia.com/api/allIndices"
-BANK_CONSTITUENTS_URL = "https://www.nseindia.com/api/equity-stockIndices"
-EQUITY_QUOTE_URL = "https://www.nseindia.com/api/quote-equity"
+BANK_CONSTITUENTS_URL = "https://www.nseindia.com/api/NextApi/apiClient/indexTrackerApi"
+EQUITY_QUOTE_URL = "https://www.nseindia.com/api/NextApi/apiClient/GetQuoteApi"
 HISTORY_SOURCE = "https://www.niftyindices.com/reports/historical-data"
 HISTORY_URL = "https://www.niftyindices.com/BackPage/getpepbHistoricaldataDBtoString"
 MAPPING_URL = "https://liveindexsa.niftyindices.com/assets/json/IndexMapping.json"
@@ -210,9 +210,12 @@ def atomic_write(path, content):
 
 
 def fetch_bank_stocks(session):
-    session.get("https://www.nseindia.com", timeout=45)
     nse_headers = {"Referer": "https://www.nseindia.com/market-data/live-equity-market"}
-    response = session.get(BANK_CONSTITUENTS_URL, params={"index": "NIFTY BANK"},
+    response = session.get(BANK_CONSTITUENTS_URL, params={
+                               "functionName": "getConstituents",
+                               "index": "NIFTY BANK",
+                               "noofrecords": "0",
+                           },
                            headers=nse_headers, timeout=45)
     response.raise_for_status()
     payload = response.json()
@@ -223,32 +226,40 @@ def fetch_bank_stocks(session):
     stocks = []
     seen = set()
     for raw in constituents:
-        symbol = raw.get("symbol")
+        symbol = raw.get("cmSymbol")
         if not symbol or symbol == "NIFTY BANK":
             continue
         if symbol in seen:
             raise ValueError(f"NIFTY BANK: duplicate constituent {symbol}")
         seen.add(symbol)
 
-        cmp = number(raw.get("lastPrice"), f"{symbol} current CMP")
+        cmp = number(raw.get("lasttradedPrice"), f"{symbol} current CMP")
         if cmp is None or cmp <= 0:
             raise ValueError(f"{symbol}: current CMP is unavailable")
 
-        quote_response = session.get(EQUITY_QUOTE_URL, params={"symbol": symbol},
+        quote_response = session.get(EQUITY_QUOTE_URL, params={
+                                         "functionName": "getSymbolData",
+                                         "marketType": "N",
+                                         "series": "EQ",
+                                         "symbol": symbol,
+                                     },
                                      headers=nse_headers, timeout=45)
         quote_response.raise_for_status()
         quote = quote_response.json()
-        metadata = quote.get("metadata", {}) if isinstance(quote, dict) else {}
-        quote_info = quote.get("info") or {}
-        quote_symbol = metadata.get("symbol") or quote_info.get("symbol")
-        if quote_symbol != symbol:
+        equity_response = quote.get("equityResponse") if isinstance(quote, dict) else None
+        if not isinstance(equity_response, list) or len(equity_response) != 1:
+            raise ValueError(f"{symbol}: expected exactly one NSE equity quote")
+        equity = equity_response[0]
+        metadata = equity.get("metaData") or {}
+        security = equity.get("secInfo") or {}
+        quote_symbol = metadata.get("symbol")
+        if quote_symbol and quote_symbol != symbol:
             raise ValueError(f"{symbol}: NSE returned quote data for {quote_symbol!r}")
-        pe = number(metadata.get("pdSymbolPe"), f"{symbol} P/E")
+        pe = number(security.get("pdSymbolPe"), f"{symbol} P/E")
         if pe == 0:
             pe = None
 
-        meta = raw.get("meta") or {}
-        company = meta.get("companyName") or raw.get("companyName") or symbol
+        company = metadata.get("companyName") or raw.get("companyName") or symbol
         stocks.append({"symbol": symbol, "name": company, "cmp": cmp, "pe": pe})
 
     if not stocks:
